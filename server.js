@@ -8,7 +8,10 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+
+// IMPORTANT: Serve static files from the current directory
+// This will serve your index.html from the public folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Size standards for comparison
 const SIZE_CHARTS = {
@@ -123,17 +126,11 @@ function getStyleRecommendations(gender, type, fitResults) {
   return recommendations;
 }
 
-// Health check route
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Health check API
+// API Routes - THESE MUST COME BEFORE THE CATCH-ALL ROUTE
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Perfect Fit API is running' });
 });
 
-// API Routes
 app.post('/api/analyze-fit', async (req, res) => {
   try {
     const { userMeasurements, productLink, gender, type } = req.body;
@@ -160,19 +157,25 @@ app.post('/api/analyze-fit', async (req, res) => {
   }
 });
 
+// Serve the main HTML file for the root route - THIS MUST BE LAST
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Catch-all handler: send back the main app for any non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Handle 404
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Serving static files from: ${path.join(__dirname, 'public')}`);
 });
